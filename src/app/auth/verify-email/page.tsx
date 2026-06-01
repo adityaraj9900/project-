@@ -1,10 +1,20 @@
 "use client";
-
+import { Section, Reveal, GoldCard, Button } from "@/components/ui/primitives";
 import { MailCheck } from "lucide-react";
-import { Button, PremiumCard } from "@/components/ui/primitives";
-import { usePlatformStore } from "@/store/platform-store";
 
-export default function Page() {
-  const toast = usePlatformStore((state) => state.toast);
-  return <main className="grid min-h-screen place-items-center px-6"><PremiumCard className="w-full max-w-md text-center"><MailCheck className="mx-auto text-aurora" size={52} /><h1 className="mt-4 text-4xl font-black">Email verification</h1><p className="mt-3 text-white/60">Placeholder for provider-backed verification links and resend handling.</p><Button className="mt-6" onClick={() => toast("Verification email placeholder resent.", "success")}>Resend email</Button></PremiumCard></main>;
+export default function VerifyEmailPage() {
+  return (
+    <main className="bg-[#080808] pt-32 pb-24">
+      <Section>
+        <Reveal>
+          <GoldCard className="mx-auto max-w-md p-10 text-center">
+            <MailCheck size={52} className="mx-auto text-[#C9A84C]" />
+            <h1 className="mt-4 text-2xl font-black text-[#F5F0E8]">Check your email</h1>
+            <p className="mt-3 text-sm text-[#F5F0E8]/55">A verification link has been sent. Click it to activate your account.</p>
+            <div className="mt-6"><Button variant="outline" className="w-full justify-center">Resend email</Button></div>
+          </GoldCard>
+        </Reveal>
+      </Section>
+    </main>
+  );
 }

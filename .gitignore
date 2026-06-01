@@ -30,6 +30,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# database
+orbitix.db
+orbitix.db-shm
+orbitix.db-wal
+drizzle/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+node_modules

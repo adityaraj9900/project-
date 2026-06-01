@@ -1,40 +1,79 @@
 "use client";
 
-import Link from "next/link";
-import { CalendarDays, Trophy } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { PaymentForm, SubmissionForm, TicketForm } from "@/components/forms/platform-forms";
-import { DataTable } from "@/components/ui/data-table";
-import { PremiumCard, ProgressBar, Section, StatusBadge } from "@/components/ui/primitives";
-import { usePlatformStore } from "@/store/platform-store";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { LayoutDashboard, BookOpen, ClipboardList, FileCheck, FolderOpen, Users, UserCircle, LogOut, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { GoldCard, Badge } from "@/components/ui/primitives";
+import { StudentHome } from "@/components/student/student-home";
+import { StudentProgram } from "@/components/student/student-program";
+import { StudentTasks } from "@/components/student/student-tasks";
+import { StudentSubmissions } from "@/components/student/student-submissions";
+import { StudentDocuments } from "@/components/student/student-documents";
+import { StudentCommunity } from "@/components/student/student-community";
+import { StudentProfile } from "@/components/student/student-profile";
 
-export default function Page() {
-  const { db, currentUser } = usePlatformStore();
-  const userId = currentUser?.id ?? "";
-  const enrollments = db.enrollments.filter((item) => item.studentId === userId);
-  const applications = db.applications.filter((item) => item.studentId === userId);
-  const submissions = db.submissions.filter((item) => item.studentId === userId);
-  const payments = db.payments.filter((item) => item.userId === userId);
-  const certificates = db.certificates.filter((item) => item.studentId === userId);
+const NAV = [
+  { key: "home", label: "Home", icon: LayoutDashboard },
+  { key: "program", label: "My Program", icon: BookOpen },
+  { key: "tasks", label: "Tasks", icon: ClipboardList },
+  { key: "submissions", label: "Submissions", icon: FileCheck },
+  { key: "documents", label: "Documents", icon: FolderOpen },
+  { key: "community", label: "Community", icon: Users },
+  { key: "profile", label: "Profile", icon: UserCircle },
+];
+
+const PANELS: Record<string, React.ReactNode> = {
+  home: <StudentHome />,
+  program: <StudentProgram />,
+  tasks: <StudentTasks />,
+  submissions: <StudentSubmissions />,
+  documents: <StudentDocuments />,
+  community: <StudentCommunity />,
+  profile: <StudentProfile />,
+};
+
+export default function StudentPage() {
+  const { data: session } = useSession();
+  const [active, setActive] = useState("home");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <DashboardShell allowed={["student"]}>
-      <div className="grid gap-6">
-        <div className="grid gap-4 md:grid-cols-4">
-          <PremiumCard><p className="text-sm text-white/50">Completion</p><p className="mt-2 text-3xl font-bold">{enrollments[0]?.progress ?? 0}%</p><div className="mt-4"><ProgressBar value={enrollments[0]?.progress ?? 0} /></div></PremiumCard>
-          <PremiumCard><p className="text-sm text-white/50">Applications</p><p className="mt-2 text-3xl font-bold">{applications.length}</p></PremiumCard>
-          <PremiumCard><p className="text-sm text-white/50">Submissions</p><p className="mt-2 text-3xl font-bold">{submissions.length}</p></PremiumCard>
-          <PremiumCard><p className="text-sm text-white/50">Badges</p><p className="mt-2 flex items-center gap-2 text-3xl font-bold"><Trophy className="text-solar" /> 4</p></PremiumCard>
+    <div className="flex min-h-screen bg-[#080808]">
+      <aside className={cn("fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-[rgba(201,168,76,0.1)] bg-[#0A0A0A] transition-transform duration-300", sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0")}>
+        <div className="flex items-center gap-3 border-b border-[rgba(201,168,76,0.1)] px-5 py-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(201,168,76,0.35)] bg-[rgba(201,168,76,0.08)] font-black text-[#C9A84C]">O</div>
+          <div>
+            <div className="text-sm font-black tracking-widest text-[#F5F0E8]">ORBITIX</div>
+            <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-400">Intern</div>
+          </div>
         </div>
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
-          <PremiumCard id="tasks"><h2 className="mb-5 text-2xl font-bold">Submit assigned task</h2><SubmissionForm /></PremiumCard>
-          <PremiumCard><h2 className="mb-5 text-2xl font-bold">Internship calendar</h2><div className="grid gap-3">{db.tasks.map((task) => <div key={task.id} className="flex items-center gap-3 rounded-2xl bg-white/8 p-3"><CalendarDays className="text-aurora" /><div><p className="font-semibold">{task.title}</p><p className="text-sm text-white/45">Due {task.deadline}</p></div></div>)}</div></PremiumCard>
+        <nav className="flex-1 overflow-y-auto p-3">
+          {NAV.map(item => (
+            <button key={item.key} onClick={() => { setActive(item.key); setSidebarOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all", active === item.key ? "bg-[rgba(201,168,76,0.12)] text-[#C9A84C]" : "text-[#F5F0E8]/50 hover:bg-[rgba(201,168,76,0.06)] hover:text-[#F5F0E8]/80")}>
+              <item.icon size={16} className="shrink-0" />{item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="border-t border-[rgba(201,168,76,0.1)] p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(201,168,76,0.25)] bg-[rgba(201,168,76,0.08)] text-sm font-bold text-[#C9A84C]">{session?.user?.name?.[0] ?? "S"}</div>
+            <div className="min-w-0"><div className="truncate text-xs font-semibold text-[#F5F0E8]/80">{session?.user?.name}</div><div className="truncate text-[10px] text-[#F5F0E8]/40">{session?.user?.email}</div></div>
+          </div>
+          <button onClick={() => signOut({ callbackUrl: "/auth/login" })} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-[#F5F0E8]/40 hover:text-red-400 transition-colors"><LogOut size={13} /> Sign out</button>
         </div>
-        <PremiumCard><h2 className="mb-5 text-2xl font-bold">Submission history and feedback</h2><DataTable rows={submissions.map((s) => ({ id: s.id, task: db.tasks.find((t) => t.id === s.taskId)?.title, status: s.status, feedback: s.feedback, submittedAt: s.submittedAt }))} columns={[{ key: "task", label: "Task" }, { key: "status", label: "Status" }, { key: "feedback", label: "Feedback" }, { key: "submittedAt", label: "Submitted" }]} /></PremiumCard>
-        <div className="grid gap-5 xl:grid-cols-2">
-          <PremiumCard id="payments"><h2 className="mb-5 text-2xl font-bold">Payment status and UPI proof</h2><PaymentForm /><div className="mt-6 grid gap-3">{payments.map((payment) => <div key={payment.id} className="flex items-center justify-between rounded-2xl bg-white/8 p-3"><span>{payment.purpose}</span><StatusBadge status={payment.status} /></div>)}</div></PremiumCard>
-          <PremiumCard id="certificates"><h2 className="mb-5 text-2xl font-bold">Certificate status</h2>{certificates.map((certificate) => <div key={certificate.id} className="rounded-2xl bg-white/8 p-4"><p className="font-semibold">{certificate.certificateNo}</p><p className="mt-1 text-sm text-white/50">Issued {certificate.issuedAt}</p><div className="mt-3"><StatusBadge status={certificate.status} /></div><Link href={certificate.verificationUrl} className="mt-4 inline-block text-aurora">Verify / download placeholder</Link></div>)}<h3 className="mt-8 mb-4 text-xl font-bold">Support</h3><TicketForm /></PremiumCard>
-        </div>
+      </aside>
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      <div className="flex-1 lg:ml-60">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[rgba(201,168,76,0.1)] bg-[rgba(8,8,8,0.95)] px-6 py-4 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="rounded-lg border border-[rgba(201,168,76,0.15)] p-2 text-[#F5F0E8]/60 lg:hidden"><Menu size={18} /></button>
+            <h1 className="text-base font-black text-[#F5F0E8] capitalize">{active}</h1>
+          </div>
+          <Badge tone="success">Intern</Badge>
+        </header>
+        <main className="p-6">{PANELS[active]}</main>
       </div>
-    </DashboardShell>
+    </div>
   );
 }

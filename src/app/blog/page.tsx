@@ -1,11 +1,36 @@
-"use client";
-
 import Link from "next/link";
-import { usePlatformStore } from "@/store/platform-store";
-import { SimpleMarketingPage } from "@/components/sections/public-sections";
-import { PremiumCard } from "@/components/ui/primitives";
+import { Section, Reveal, GoldCard, Badge, SectionHeader } from "@/components/ui/primitives";
+import { db } from "@/db";
+import { blogs } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
-export default function Page() {
-  const blogs = usePlatformStore((state) => state.db.blogs);
-  return <SimpleMarketingPage eyebrow="Resources" title="Playbooks for interns and clients." body="Practical writing from the academy and agency floor."><div className="grid gap-5 md:grid-cols-2">{blogs.map((blog) => <PremiumCard key={blog.id}><p className="text-sm text-aurora">{blog.category} · {blog.publishedAt}</p><h2 className="mt-3 text-2xl font-bold">{blog.title}</h2><p className="mt-3 text-white/62">{blog.excerpt}</p><Link href={`/blog/${blog.slug}`} className="mt-5 inline-block text-aurora">Read article</Link></PremiumCard>)}</div></SimpleMarketingPage>;
+async function getBlogs() {
+  return db.select().from(blogs).where(eq(blogs.published, true)).all();
+}
+
+export default async function BlogPage() {
+  const posts = await getBlogs();
+  return (
+    <main className="bg-[#080808] pt-32 pb-24">
+      <div className="pointer-events-none fixed inset-0 -z-10" style={{ backgroundImage: "linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+      <Section>
+        <Reveal><SectionHeader eyebrow="Resources" title="Playbooks for builders." subtitle="Practical writing from the Orbitix studio — for interns, clients, and engineers." /></Reveal>
+        <div className="grid gap-6 md:grid-cols-2">
+          {posts.map((post, i) => (
+            <div key={post.id}>
+              <GoldCard>
+                <Badge tone="gold">{post.category}</Badge>
+                <h2 className="mt-4 text-xl font-black text-[#F5F0E8]">{post.title}</h2>
+                <p className="mt-2 text-sm text-[#F5F0E8]/55">{post.excerpt}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-xs text-[#F5F0E8]/35">{post.author} · {post.publishedAt}</span>
+                  <Link href={`/blog/${post.slug}`} className="text-sm font-semibold text-[#C9A84C] hover:text-[#E8C97A] transition-colors">Read →</Link>
+                </div>
+              </GoldCard>
+            </div>
+          ))}
+        </div>
+      </Section>
+    </main>
+  );
 }

@@ -1,40 +1,131 @@
 "use client";
 
-import { Check, FileDown, X } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { AnalyticsCharts, CertificatePie, ProjectCards, StatGrid } from "@/components/dashboard/dashboard-widgets";
-import { DataTable } from "@/components/ui/data-table";
-import { Button, PremiumCard, StatusBadge } from "@/components/ui/primitives";
-import { usePlatformStore } from "@/store/platform-store";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  LayoutDashboard, Users, FileText, Briefcase, CreditCard, BookOpen,
+  Settings, Bell, LogOut, ChevronRight, TrendingUp, UserCheck,
+  ClipboardList, Award, Menu, X, Megaphone, Star
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { GoldCard, Button, Badge, ProgressBar, Tabs, StatusBadge, Skeleton, SectionHeader } from "@/components/ui/primitives";
+import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import { AdminLeads } from "@/components/admin/admin-leads";
+import { AdminApplications } from "@/components/admin/admin-applications";
+import { AdminInterns } from "@/components/admin/admin-interns";
+import { AdminProjects } from "@/components/admin/admin-projects";
+import { AdminPayments } from "@/components/admin/admin-payments";
+import { AdminBlog } from "@/components/admin/admin-blog";
+import { AdminDocuments } from "@/components/admin/admin-documents";
+import { AdminAnnouncements } from "@/components/admin/admin-announcements";
+import { AdminSettings } from "@/components/admin/admin-settings";
 
-export default function Page() {
-  const { db, setApplicationStatus, setPaymentStatus, setLeadStatus, reviewSubmission, updateAnyRecord, toast } = usePlatformStore();
-  const cmsCollections = ["programs", "services", "blogs", "faqs", "testimonials", "settings"] as const;
-  const cmsRecordId = (collection: (typeof cmsCollections)[number]) => {
-    const first = db[collection][0] as { id?: string; key?: string } | undefined;
-    return first?.id ?? first?.key ?? "";
-  };
+const NAV = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { key: "leads", label: "Leads CRM", icon: TrendingUp },
+  { key: "applications", label: "Applications", icon: ClipboardList },
+  { key: "interns", label: "Interns", icon: Users },
+  { key: "documents", label: "Offer Letters & LORs", icon: FileText },
+  { key: "projects", label: "Projects", icon: Briefcase },
+  { key: "payments", label: "Payments", icon: CreditCard },
+  { key: "blog", label: "Blog CMS", icon: BookOpen },
+  { key: "announcements", label: "Announcements", icon: Megaphone },
+  { key: "settings", label: "Settings", icon: Settings },
+];
+
+const PANELS: Record<string, React.ReactNode> = {
+  dashboard: <AdminDashboard />,
+  leads: <AdminLeads />,
+  applications: <AdminApplications />,
+  interns: <AdminInterns />,
+  documents: <AdminDocuments />,
+  projects: <AdminProjects />,
+  payments: <AdminPayments />,
+  blog: <AdminBlog />,
+  announcements: <AdminAnnouncements />,
+  settings: <AdminSettings />,
+};
+
+export default function AdminPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [active, setActive] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <DashboardShell allowed={["super-admin", "admin"]}>
-      <div className="grid gap-6">
-        <StatGrid />
-        <AnalyticsCharts />
-        <div className="grid gap-5 xl:grid-cols-[1fr_0.45fr]">
-          <PremiumCard id="applications">
-            <div className="mb-5 flex items-center justify-between"><h2 className="text-2xl font-bold">Manage applications</h2><Button className="bg-white text-ink" onClick={() => toast("CSV export placeholder generated.", "success")}><FileDown size={16} /> Export CSV</Button></div>
-            <DataTable rows={db.applications.map((a) => ({ id: a.id, student: db.users.find((u) => u.id === a.studentId)?.name, program: db.programs.find((p) => p.id === a.programId)?.title, status: a.status, createdAt: a.createdAt }))} columns={[{ key: "student", label: "Student" }, { key: "program", label: "Program" }, { key: "status", label: "Status" }, { key: "createdAt", label: "Created" }]} actions={(row) => <div className="flex gap-2"><button onClick={() => setApplicationStatus(String(row.id), "approved")} className="rounded-full bg-aurora p-2 text-ink"><Check size={15} /></button><button onClick={() => setApplicationStatus(String(row.id), "rejected")} className="rounded-full bg-coral p-2 text-white"><X size={15} /></button></div>} />
-          </PremiumCard>
-          <CertificatePie />
+    <div className="flex min-h-screen bg-[#080808]">
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[rgba(201,168,76,0.1)] bg-[#0A0A0A] transition-transform duration-300",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}>
+        {/* Logo */}
+        <div className="flex items-center gap-3 border-b border-[rgba(201,168,76,0.1)] px-5 py-5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgba(201,168,76,0.35)] bg-[rgba(201,168,76,0.08)] text-xl font-black text-[#C9A84C]">O</div>
+          <div>
+            <div className="text-sm font-black tracking-widest text-[#F5F0E8]">ORBITIX</div>
+            <div className="text-[10px] uppercase tracking-[0.22em] text-[#C9A84C]/60">Admin</div>
+          </div>
         </div>
-        <PremiumCard><h2 className="mb-5 text-2xl font-bold">Review submissions</h2><DataTable rows={db.submissions.map((s) => ({ id: s.id, student: db.users.find((u) => u.id === s.studentId)?.name, task: db.tasks.find((t) => t.id === s.taskId)?.title, status: s.status, feedback: s.feedback }))} columns={[{ key: "student", label: "Student" }, { key: "task", label: "Task" }, { key: "status", label: "Status" }, { key: "feedback", label: "Feedback" }]} actions={(row) => <div className="flex gap-2"><Button className="px-3 py-2" onClick={() => reviewSubmission(String(row.id), "approved", "Approved by admin. Excellent work.")}>Approve</Button><Button className="bg-solar px-3 py-2 text-ink" onClick={() => reviewSubmission(String(row.id), "pending", "Please resubmit with clearer documentation.")}>Resubmit</Button></div>} /></PremiumCard>
-        <div className="grid gap-5 xl:grid-cols-2">
-          <PremiumCard><h2 className="mb-5 text-2xl font-bold">Manage payments</h2><DataTable rows={db.payments.map((p) => ({ id: p.id, user: db.users.find((u) => u.id === p.userId)?.name, purpose: p.purpose, amount: p.amount, status: p.status }))} columns={[{ key: "user", label: "User" }, { key: "purpose", label: "Purpose" }, { key: "amount", label: "Amount" }, { key: "status", label: "Status" }]} actions={(row) => <div className="flex gap-2"><Button className="px-3 py-2" onClick={() => setPaymentStatus(String(row.id), "approved")}>Approve</Button><Button className="bg-coral px-3 py-2 text-white" onClick={() => setPaymentStatus(String(row.id), "rejected")}>Reject</Button></div>} /></PremiumCard>
-          <PremiumCard id="agency"><h2 className="mb-5 text-2xl font-bold">Lead pipeline</h2><DataTable rows={db.leads.map((l) => ({ id: l.id, name: l.name, company: l.company, budget: l.budget, status: l.status }))} columns={[{ key: "name", label: "Lead" }, { key: "company", label: "Company" }, { key: "budget", label: "Budget" }, { key: "status", label: "Status" }]} actions={(row) => <select className="rounded-xl bg-white/10 p-2" value={String(row.status)} onChange={(e) => setLeadStatus(String(row.id), e.target.value as never)}><option>New</option><option>Contacted</option><option>Proposal Sent</option><option>Won</option><option>Lost</option></select>} /></PremiumCard>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto p-3">
+          {NAV.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => { setActive(item.key); setSidebarOpen(false); }}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                active === item.key
+                  ? "bg-[rgba(201,168,76,0.12)] text-[#C9A84C]"
+                  : "text-[#F5F0E8]/50 hover:bg-[rgba(201,168,76,0.06)] hover:text-[#F5F0E8]/80"
+              )}
+            >
+              <item.icon size={16} className="shrink-0" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* User */}
+        <div className="border-t border-[rgba(201,168,76,0.1)] p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(201,168,76,0.25)] bg-[rgba(201,168,76,0.08)] text-sm font-bold text-[#C9A84C]">
+              {session?.user?.name?.[0] ?? "A"}
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-xs font-semibold text-[#F5F0E8]/80">{session?.user?.name ?? "Admin"}</div>
+              <div className="truncate text-[10px] text-[#F5F0E8]/40">{session?.user?.email}</div>
+            </div>
+          </div>
+          <button onClick={() => signOut({ callbackUrl: "/auth/login" })} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-[#F5F0E8]/40 hover:text-red-400 transition-colors">
+            <LogOut size={13} /> Sign out
+          </button>
         </div>
-        <PremiumCard><h2 className="mb-5 text-2xl font-bold">Client project management</h2><ProjectCards /></PremiumCard>
-        <PremiumCard id="cms"><h2 className="mb-5 text-2xl font-bold">CMS and platform settings</h2><div className="grid gap-3 md:grid-cols-3">{cmsCollections.map((collection) => <button key={collection} onClick={() => updateAnyRecord(collection, cmsRecordId(collection), { updatedAt: new Date().toISOString() })} className="rounded-2xl border border-white/10 bg-white/8 p-4 text-left capitalize hover:border-aurora/50">{collection}<p className="mt-2 text-sm text-white/45">Create, edit, delete, publish placeholder</p></button>)}</div></PremiumCard>
-        <PremiumCard><h2 className="mb-5 text-2xl font-bold">Activity logs</h2><div className="grid gap-3">{db.activityLogs.map((log) => <div key={log.id} className="flex justify-between rounded-2xl bg-white/8 p-3"><span>{log.actor}: {log.action}</span><span className="text-white/45">{log.createdAt}</span></div>)}</div></PremiumCard>
+      </aside>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+
+      {/* Main content */}
+      <div className="flex-1 lg:ml-64">
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[rgba(201,168,76,0.1)] bg-[rgba(8,8,8,0.95)] px-6 py-4 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="rounded-lg border border-[rgba(201,168,76,0.15)] p-2 text-[#F5F0E8]/60 lg:hidden">
+              <Menu size={18} />
+            </button>
+            <h1 className="text-base font-black text-[#F5F0E8] capitalize">{active}</h1>
+          </div>
+          <Badge tone="gold">Super Admin</Badge>
+        </header>
+
+        <main className="p-6">
+          {PANELS[active] ?? <div className="text-[#F5F0E8]/40 text-sm">Section coming soon.</div>}
+        </main>
       </div>
-    </DashboardShell>
+    </div>
   );
 }

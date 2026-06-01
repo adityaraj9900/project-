@@ -1,6 +1,15 @@
-import { SimpleMarketingPage } from "@/components/sections/public-sections";
-import { PremiumCard } from "@/components/ui/primitives";
+"use client";
+import Link from "next/link";
+import { Section, Reveal, SectionHeader, Button } from "@/components/ui/primitives";
 
-export default function Page() {
-  return <SimpleMarketingPage eyebrow="Student success" title="Portfolio-ready outcomes from real work." body="Students finish with task history, mentor feedback, GitHub/live links, badges, and verifiable certificates."><div className="grid gap-5 md:grid-cols-3">{["Dashboard architect", "AI automation builder", "Product designer"].map((title) => <PremiumCard key={title}><h2 className="text-xl font-bold">{title}</h2><p className="mt-3 text-white/60">Completed project modules, improved after review, and shipped a public artifact.</p></PremiumCard>)}</div></SimpleMarketingPage>;
+export default function SuccessStoriesPage() {
+  return (
+    <main className="bg-[#080808] pt-32 pb-24">
+      <div className="pointer-events-none fixed inset-0 -z-10" style={{ backgroundImage: "linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+      <Section>
+        <Reveal><SectionHeader eyebrow="Success stories" title="From interns to engineers." subtitle="How Orbitix graduates have gone on to land jobs and ship products." /></Reveal>
+        <Reveal delay={0.1}><div className="text-center"><Link href="/testimonials"><Button variant="gold">Read testimonials</Button></Link></div></Reveal>
+      </Section>
+    </main>
+  );
 }

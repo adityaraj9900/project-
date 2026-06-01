@@ -1,32 +1,73 @@
 "use client";
 
-import { Download, MessageSquare, Star } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { ProjectCards } from "@/components/dashboard/dashboard-widgets";
-import { DataTable } from "@/components/ui/data-table";
-import { Button, PremiumCard, StatusBadge } from "@/components/ui/primitives";
-import { usePlatformStore } from "@/store/platform-store";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { LayoutDashboard, FolderKanban, CreditCard, MessageSquare, UserCircle, LogOut, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/primitives";
+import { ClientHome } from "@/components/client/client-home";
+import { ClientProjects } from "@/components/client/client-projects";
+import { ClientPayments } from "@/components/client/client-payments";
+import { ClientMessages } from "@/components/client/client-messages";
+import { ClientProfile } from "@/components/client/client-profile";
 
-export default function Page() {
-  const { db, currentUser, toast } = usePlatformStore();
-  const projects = db.projects.filter((item) => item.clientId === currentUser?.id);
-  const invoices = db.invoices.filter((invoice) => projects.some((project) => project.id === invoice.projectId));
+const NAV = [
+  { key: "home", label: "Overview", icon: LayoutDashboard },
+  { key: "projects", label: "Projects", icon: FolderKanban },
+  { key: "payments", label: "Payments", icon: CreditCard },
+  { key: "messages", label: "Messages", icon: MessageSquare },
+  { key: "profile", label: "Profile", icon: UserCircle },
+];
+
+const PANELS: Record<string, React.ReactNode> = {
+  home: <ClientHome />,
+  projects: <ClientProjects />,
+  payments: <ClientPayments />,
+  messages: <ClientMessages />,
+  profile: <ClientProfile />,
+};
+
+export default function ClientPage() {
+  const { data: session } = useSession();
+  const [active, setActive] = useState("home");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <DashboardShell allowed={["client"]}>
-      <div className="grid gap-6">
-        <div className="grid gap-4 md:grid-cols-4">
-          <PremiumCard><p className="text-sm text-white/50">Projects</p><p className="mt-2 text-3xl font-bold">{projects.length}</p></PremiumCard>
-          <PremiumCard><p className="text-sm text-white/50">Milestones</p><p className="mt-2 text-3xl font-bold">{db.milestones.length}</p></PremiumCard>
-          <PremiumCard><p className="text-sm text-white/50">Invoices</p><p className="mt-2 text-3xl font-bold">{invoices.length}</p></PremiumCard>
-          <PremiumCard><p className="text-sm text-white/50">Support tickets</p><p className="mt-2 text-3xl font-bold">{db.supportTickets.filter((t) => t.userId === currentUser?.id).length}</p></PremiumCard>
+    <div className="flex min-h-screen bg-[#080808]">
+      <aside className={cn("fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-[rgba(201,168,76,0.1)] bg-[#0A0A0A] transition-transform duration-300", sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0")}>
+        <div className="flex items-center gap-3 border-b border-[rgba(201,168,76,0.1)] px-5 py-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(201,168,76,0.35)] bg-[rgba(201,168,76,0.08)] font-black text-[#C9A84C]">O</div>
+          <div>
+            <div className="text-sm font-black tracking-widest text-[#F5F0E8]">ORBITIX</div>
+            <div className="text-[10px] uppercase tracking-[0.22em] text-[#C9A84C]">Client</div>
+          </div>
         </div>
-        <PremiumCard><h2 className="mb-5 text-2xl font-bold">My projects</h2><ProjectCards /></PremiumCard>
-        <PremiumCard><h2 className="mb-5 text-2xl font-bold">Milestones</h2><DataTable rows={db.milestones.map((m) => ({ id: m.id, project: db.projects.find((p) => p.id === m.projectId)?.title, title: m.title, dueDate: m.dueDate, status: m.status }))} columns={[{ key: "project", label: "Project" }, { key: "title", label: "Milestone" }, { key: "dueDate", label: "Due" }, { key: "status", label: "Status" }]} /></PremiumCard>
-        <div className="grid gap-5 xl:grid-cols-2">
-          <PremiumCard id="invoices"><h2 className="mb-5 text-2xl font-bold">Invoices and payments</h2><DataTable rows={invoices.map((i) => ({ id: i.id, amount: i.amount, dueDate: i.dueDate, status: i.status }))} columns={[{ key: "amount", label: "Amount" }, { key: "dueDate", label: "Due" }, { key: "status", label: "Status" }]} actions={() => <Button className="px-3 py-2" onClick={() => toast("Invoice download placeholder.", "success")}><Download size={15} /> PDF</Button>} /></PremiumCard>
-          <PremiumCard id="messages"><h2 className="mb-5 text-2xl font-bold">Files, messages, feedback</h2><div className="grid gap-3">{["Discovery brief.pdf", "Sprint demo link", "Final delivery placeholder"].map((file) => <div key={file} className="flex items-center justify-between rounded-2xl bg-white/8 p-3"><span>{file}</span><StatusBadge status="active" /></div>)}</div><div className="mt-5 flex gap-3"><Button onClick={() => toast("Message sent placeholder.", "success")}><MessageSquare size={16} /> Message team</Button><Button className="bg-white text-ink" onClick={() => toast("Testimonial saved placeholder.", "success")}><Star size={16} /> Testimonial</Button></div></PremiumCard>
+        <nav className="flex-1 overflow-y-auto p-3">
+          {NAV.map(item => (
+            <button key={item.key} onClick={() => { setActive(item.key); setSidebarOpen(false); }} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all", active === item.key ? "bg-[rgba(201,168,76,0.12)] text-[#C9A84C]" : "text-[#F5F0E8]/50 hover:bg-[rgba(201,168,76,0.06)] hover:text-[#F5F0E8]/80")}>
+              <item.icon size={16} className="shrink-0" />{item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="border-t border-[rgba(201,168,76,0.1)] p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(201,168,76,0.25)] bg-[rgba(201,168,76,0.08)] text-sm font-bold text-[#C9A84C]">{session?.user?.name?.[0] ?? "C"}</div>
+            <div className="min-w-0"><div className="truncate text-xs font-semibold text-[#F5F0E8]/80">{session?.user?.name}</div><div className="truncate text-[10px] text-[#F5F0E8]/40">{session?.user?.email}</div></div>
+          </div>
+          <button onClick={() => signOut({ callbackUrl: "/auth/login" })} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-[#F5F0E8]/40 hover:text-red-400 transition-colors"><LogOut size={13} /> Sign out</button>
         </div>
+      </aside>
+      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      <div className="flex-1 lg:ml-60">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[rgba(201,168,76,0.1)] bg-[rgba(8,8,8,0.95)] px-6 py-4 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="rounded-lg border border-[rgba(201,168,76,0.15)] p-2 text-[#F5F0E8]/60 lg:hidden"><Menu size={18} /></button>
+            <h1 className="text-base font-black text-[#F5F0E8]">{NAV.find(n => n.key === active)?.label}</h1>
+          </div>
+          <Badge tone="gold">Client</Badge>
+        </header>
+        <main className="p-6">{PANELS[active]}</main>
       </div>
-    </DashboardShell>
+    </div>
   );
 }

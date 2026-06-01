@@ -1,11 +1,25 @@
 "use client";
-
 import { useState } from "react";
-import { Button, Field, inputClass, PremiumCard } from "@/components/ui/primitives";
-import { usePlatformStore } from "@/store/platform-store";
+import { Section, Reveal, GoldCard, Button, inputClass, Field } from "@/components/ui/primitives";
 
-export default function Page() {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
-  const toast = usePlatformStore((state) => state.toast);
-  return <main className="grid min-h-screen place-items-center px-6"><PremiumCard className="w-full max-w-md"><h1 className="text-4xl font-black">Reset password</h1><p className="mt-3 text-white/60">Secure token handling can be connected to your auth provider.</p><div className="mt-6 grid gap-4"><Field label="New password"><input className={inputClass} type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field><Button disabled={password.length < 6} onClick={() => toast("Password reset placeholder completed.", "success")}>Reset password</Button></div></PremiumCard></main>;
+  const [done, setDone] = useState(false);
+  return (
+    <main className="bg-[#080808] pt-32 pb-24">
+      <Section>
+        <Reveal>
+          <GoldCard className="mx-auto max-w-md p-8">
+            <h1 className="text-2xl font-black text-[#F5F0E8]">Reset password</h1>
+            {done ? <p className="mt-6 text-emerald-400">Password updated. You can now sign in.</p> : (
+              <form onSubmit={(e) => { e.preventDefault(); setDone(true); }} className="mt-6 grid gap-4">
+                <Field label="New password"><input type="password" required minLength={6} className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" /></Field>
+                <Button type="submit" variant="gold" disabled={password.length < 6} className="w-full justify-center">Reset password</Button>
+              </form>
+            )}
+          </GoldCard>
+        </Reveal>
+      </Section>
+    </main>
+  );
 }
